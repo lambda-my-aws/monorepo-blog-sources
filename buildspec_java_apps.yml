@@ -1,0 +1,34 @@
+---
+# Buildspec for mvn build based app for CI testing
+
+version: 0.2
+env:
+  shell: /bin/bash
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto11
+      python: 3.7
+
+  build:
+    commands:
+      - cd ${SERVICE_NAME}
+      - mvn clean install -ntp
+      - ls -lR target || echo No target produced
+  post_build:
+    commands:
+      - |
+          if ! [ -d /batch-cache/${SERVICE_NAME} ];
+            then mkdir -p /batch-cache/${SERVICE_NAME};
+            else rm -rf /batch-cache/${SERVICE_NAME}/*;
+          fi
+      - cp -r target /batch-cache/${SERVICE_NAME}
+      - aws s3 sync target s3://${ARTIFACTS_BUCKET}/cache/${SERVICE_NAME}/ --include "*.jar" --exclude="*"
+
+artifacts:
+  files:
+    - "*.jar"
+  name: "$(echo $SERVICE_NAME)"
+  discard-paths: yes
+  base-directory: "$(echo $SERVICE_NAME)/target"

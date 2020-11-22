@@ -1,0 +1,32 @@
+---
+# Docker compose override file for AWS dev environment
+
+x-tags:
+  costcentre: lambda-my-aws
+  project: mono-repo-services
+  environment: stg
+
+x-cluster:
+  Use: stg
+
+x-vpc:
+  Lookup:
+    VpcId:
+      Tags:
+        - Name: vpc--nonprod
+        - Environment: nonprod
+    AppSubnets:
+      Tags:
+        - vpc::usage: application
+    PublicSubnets:
+      Tags:
+        - vpc::usage: public
+    StorageSubnets:
+      Tags:
+        - vpc::usage: storage
+    RoleArn: ${NONPROD_RO_ROLE_ARN}
+
+services:
+  app01:
+    x-network:
+      use_cloudmap: False
